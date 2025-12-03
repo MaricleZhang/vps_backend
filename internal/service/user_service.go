@@ -7,6 +7,7 @@ import (
 	"github.com/mariclezhang/vps_backend/internal/util"
 	"github.com/mariclezhang/vps_backend/pkg/db"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // UserService 用户服务
@@ -32,7 +33,7 @@ func (s *UserService) GetUserInfo(userID int64) (*model.User, error) {
 // UpdateUserInfo 更新用户信息
 func (s *UserService) UpdateUserInfo(userID int64, username, avatar string) error {
 	updates := make(map[string]interface{})
-	
+
 	if username != "" {
 		updates["username"] = username
 	}
@@ -109,7 +110,7 @@ func (s *UserService) DeductBalance(userID int64, amount float64) error {
 	// 使用事务确保余额充足
 	return db.DB.Transaction(func(tx *gorm.DB) error {
 		var user model.User
-		if err := tx.Clauses(db.DB.Clauses()).First(&user, userID).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, userID).Error; err != nil {
 			return err
 		}
 
