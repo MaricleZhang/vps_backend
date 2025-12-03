@@ -1,0 +1,39 @@
+server:
+  port: 8080
+  mode: debug # debug/release
+  frontend_url: "http://localhost:8000" # CORS allowed origin
+
+database:
+  host: localhost
+  port: 5432
+  user: vps_user
+  password: vps_password
+  dbname: vps_db
+  sslmode: disable
+  max_open_conns: 100
+  max_idle_conns: 10
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: "your-secret-key-change-in-production-2025"
+  expire_hours: 24
+
+email:
+  smtp_host: smtp.example.com
+  smtp_port: 587
+  username: noreply@example.com
+  password: email_password
+  from: "VPS Platform <noreply@example.com>"
+
+traffic:
+  sync_interval_seconds: 300 # Redis -> DB 同步间隔
+  reset_day: 1 # 每月1号重置流量
+
+admin:
+  default_email: "admin@example.com"
+  default_password: "admin123456"
