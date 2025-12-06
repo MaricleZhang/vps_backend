@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/mariclezhang/vps_backend/internal/api/router"
 	"github.com/mariclezhang/vps_backend/internal/util"
@@ -80,6 +81,7 @@ func loadConfig() error {
 
 	// 读取环境变量
 	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// 设置默认值
 	viper.SetDefault("server.port", 8080)

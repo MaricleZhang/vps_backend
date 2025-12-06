@@ -22,13 +22,13 @@ func NewAuthHandler() *AuthHandler {
 // LoginRequest 登录请求
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=8"`
 }
 
 // RegisterRequest 注册请求
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=8"`
 	Username string `json:"username"`
 }
 
@@ -41,7 +41,7 @@ type SendResetCodeRequest struct {
 type ResetPasswordRequest struct {
 	Email       string `json:"email" binding:"required,email"`
 	Code        string `json:"code" binding:"required"`
-	NewPassword string `json:"newPassword" binding:"required,min=6"`
+	NewPassword string `json:"newPassword" binding:"required,min=8"`
 }
 
 // Login 用户登录
@@ -54,7 +54,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	token, user, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
-		util.Error(c, 400, err.Error())
+		util.Unauthorized(c, err.Error())
 		return
 	}
 

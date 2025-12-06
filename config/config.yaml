@@ -20,7 +20,7 @@ redis:
   db: 0
 
 jwt:
-  secret: "your-secret-key-change-in-production-2025"
+  secret: "" # Set via JWT_SECRET environment variable
   expire_hours: 24
 
 email:
