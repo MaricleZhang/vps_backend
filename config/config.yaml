@@ -23,13 +23,6 @@ jwt:
   secret: "" # Set via JWT_SECRET environment variable
   expire_hours: 24
 
-email:
-  smtp_host: smtp.example.com
-  smtp_port: 587
-  username: noreply@example.com
-  password: email_password
-  from: "VPS Platform <noreply@example.com>"
-
 traffic:
   sync_interval_seconds: 300 # Redis -> DB 同步间隔
   reset_day: 1 # 每月1号重置流量

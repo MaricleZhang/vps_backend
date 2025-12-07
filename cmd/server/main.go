@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/mariclezhang/vps_backend/internal/api/router"
 	"github.com/mariclezhang/vps_backend/internal/util"
 	"github.com/mariclezhang/vps_backend/pkg/cache"
 	"github.com/mariclezhang/vps_backend/pkg/db"
+	"github.com/mariclezhang/vps_backend/pkg/email"
 	"github.com/spf13/viper"
 )
 
@@ -58,6 +61,16 @@ func main() {
 	// 初始化JWT
 	util.InitJWT(viper.GetString("jwt.secret"))
 
+	// 初始化邮件服务
+	emailConfig := email.Config{
+		AccessKeyID:     viper.GetString("email.aliyun.access_key_id"),
+		AccessKeySecret: viper.GetString("email.aliyun.access_key_secret"),
+		AccountName:     viper.GetString("email.aliyun.account_name"),
+		FromAlias:       viper.GetString("email.aliyun.from_alias"),
+		RegionID:        viper.GetString("email.aliyun.region_id"),
+	}
+	email.InitEmailService(emailConfig)
+
 	// 设置路由
 	frontendURL := viper.GetString("server.frontend_url")
 	r := router.SetupRouter(frontendURL)
@@ -74,6 +87,15 @@ func main() {
 
 // loadConfig 加载配置文件
 func loadConfig() error {
+	// 加载 .env 文件（如果存在）
+	if _, err := os.Stat(".env"); err == nil {
+		if err := godotenv.Load(); err != nil {
+			log.Printf("Warning: Error loading .env file: %v", err)
+		} else {
+			log.Println(".env file loaded successfully")
+		}
+	}
+
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config")

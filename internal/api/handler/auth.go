@@ -29,7 +29,12 @@ type LoginRequest struct {
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
-	Username string `json:"username"`
+	Code     string `json:"code" binding:"required"`
+}
+
+// SendRegisterCodeRequest 发送注册验证码请求
+type SendRegisterCodeRequest struct {
+	Email string `json:"email" binding:"required,email"`
 }
 
 // SendResetCodeRequest 发送重置验证码请求
@@ -76,17 +81,30 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// 如果没有提供用户名，使用邮箱前缀
-	if req.Username == "" {
-		req.Username = req.Email[:len(req.Email)-len("@example.com")]
-	}
-
-	if err := h.authService.Register(req.Email, req.Password, req.Username); err != nil {
+	if err := h.authService.Register(req.Email, req.Password, req.Code); err != nil {
 		util.Error(c, 400, err.Error())
 		return
 	}
 
 	util.SuccessWithMessage(c, "注册成功", gin.H{
+		"success": true,
+	})
+}
+
+// SendRegisterCode 发送注册验证码
+func (h *AuthHandler) SendRegisterCode(c *gin.Context) {
+	var req SendRegisterCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.BadRequest(c, "请求参数错误")
+		return
+	}
+
+	if err := h.authService.SendRegisterCode(req.Email); err != nil {
+		util.Error(c, 400, err.Error())
+		return
+	}
+
+	util.SuccessWithMessage(c, "验证码已发送", gin.H{
 		"success": true,
 	})
 }

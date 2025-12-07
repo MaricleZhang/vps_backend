@@ -2,6 +2,7 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"github.com/mariclezhang/vps_backend/internal/model"
 	"github.com/mariclezhang/vps_backend/pkg/db"
@@ -26,29 +27,104 @@ func setupTestDB(t *testing.T) {
 		&model.UserNodeAccess{},
 		&model.TrafficLog{},
 		&model.Order{},
+		&model.PasswordReset{},
 	)
+}
+
+// createTestVerificationCode 创建测试验证码
+func createTestVerificationCode(email, code string) {
+	resetRecord := model.PasswordReset{
+		Email:     email,
+		Code:      code,
+		ExpiredAt: time.Now().Add(15 * time.Minute),
+		Used:      false,
+	}
+	db.DB.Create(&resetRecord)
+}
+
+func TestAuthService_SendRegisterCode(t *testing.T) {
+	setupTestDB(t)
+	authService := NewAuthService()
+
+	// 测试发送注册验证码成功
+	err := authService.SendRegisterCode("929006968@qq.com")
+	assert.NoError(t, err)
+
+	// 验证验证码已保存到数据库
+	var resetRecord model.PasswordReset
+	err = db.DB.Where("email = ?", "929006968@qq.com").First(&resetRecord).Error
+	assert.NoError(t, err)
+	assert.NotEmpty(t, resetRecord.Code)
+	assert.False(t, resetRecord.Used)
+
+	// 测试已注册邮箱发送验证码失败
+	user := model.User{
+		Email:        "existing@example.com",
+		Username:     "existing",
+		PasswordHash: "hash",
+		Status:       "active",
+	}
+	db.DB.Create(&user)
+
+	err = authService.SendRegisterCode("existing@example.com")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "已被注册")
 }
 
 func TestAuthService_Register(t *testing.T) {
 	setupTestDB(t)
 	authService := NewAuthService()
 
+	// 创建测试验证码
+	createTestVerificationCode("test@example.com", "123456")
+
 	// 测试注册成功
-	err := authService.Register("test@example.com", "password123", "testuser")
+	err := authService.Register("test@example.com", "password123", "123456")
 	assert.NoError(t, err)
 
-	// 测试重复注册
-	err = authService.Register("test@example.com", "password123", "testuser2")
+	// 验证用户已创建
+	var user model.User
+	err = db.DB.Where("email = ?", "test@example.com").First(&user).Error
+	assert.NoError(t, err)
+	assert.Equal(t, "test", user.Username) // 用户名应该是邮箱前缀
+
+	// 验证验证码已标记为已使用
+	var resetRecord model.PasswordReset
+	db.DB.Where("email = ? AND code = ?", "test@example.com", "123456").First(&resetRecord)
+	assert.True(t, resetRecord.Used)
+
+	// 测试重复注册（使用新验证码）
+	createTestVerificationCode("test@example.com", "654321")
+	err = authService.Register("test@example.com", "password123", "654321")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "已被注册")
+
+	// 测试验证码无效
+	err = authService.Register("newuser@example.com", "password123", "wrongcode")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "验证码无效或已过期")
+
+	// 测试验证码已过期
+	expiredRecord := model.PasswordReset{
+		Email:     "expired@example.com",
+		Code:      "111111",
+		ExpiredAt: time.Now().Add(-1 * time.Hour), // 已过期
+		Used:      false,
+	}
+	db.DB.Create(&expiredRecord)
+
+	err = authService.Register("expired@example.com", "password123", "111111")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "验证码无效或已过期")
 }
 
 func TestAuthService_Login(t *testing.T) {
 	setupTestDB(t)
 	authService := NewAuthService()
 
-	// 先注册用户
-	authService.Register("test@example.com", "password123", "testuser")
+	// 先创建验证码并注册用户
+	createTestVerificationCode("test@example.com", "123456")
+	authService.Register("test@example.com", "password123", "123456")
 
 	// 测试登录成功
 	token, user, err := authService.Login("test@example.com", "password123")

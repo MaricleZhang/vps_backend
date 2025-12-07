@@ -28,6 +28,7 @@ func SetupRouter(frontendURL string) *gin.Engine {
 		{
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/register", authHandler.Register)
+			auth.POST("/send-register-code", authHandler.SendRegisterCode)
 			auth.POST("/send-reset-code", authHandler.SendResetCode)
 			auth.POST("/reset-password", authHandler.ResetPassword)
 		}
